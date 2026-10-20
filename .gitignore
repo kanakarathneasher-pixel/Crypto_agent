@@ -1,0 +1,68 @@
+# Python virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Python caches and compiled files
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+
+# Saved models
+models/*
+!models/.gitkeep
+*.pkl
+*.pickle
+*.joblib
+*.h5
+*.hdf5
+*.keras
+*.pt
+*.pth
+*.onnx
+*.ubj
+
+# Generated datasets
+data/raw/*
+!data/raw/.gitkeep
+data/processed/*
+!data/processed/.gitkeep
+
+# Build, packaging, and coverage artifacts
+build/
+dist/
+*.egg-info/
+.coverage
+.coverage.*
+htmlcov/
+coverage/
+
+# Frontend dependencies and generated output
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+
+# Logs, local databases, and temporary files
+logs/
+*.log
+*.sqlite
+*.sqlite3
+*.db
+*.tmp
+*.bak
+
+# Operating system files
+.DS_Store
+Thumbs.db
+Desktop.ini
