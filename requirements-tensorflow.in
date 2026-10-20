@@ -1,0 +1,10 @@
+# Isolated research environment: Python 3.11, native Windows CPU TensorFlow.
+# The successful resolver output will be frozen in requirements-tensorflow.txt.
+tensorflow>=2.16,<3
+numpy>=1.26,<3
+pandas>=2.2,<4
+scikit-learn>=1.5,<2
+xgboost>=2,<4
+joblib>=1.3,<2
+pytest>=8,<10
+requests>=2.31,<3
