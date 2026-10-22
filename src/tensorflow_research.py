@@ -18,7 +18,11 @@ os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "2")
 os.environ.setdefault("TF_NUM_INTRAOP_THREADS", "2")
 os.environ.setdefault("TF_NUM_INTEROP_THREADS", "2")
 os.environ.setdefault("TF_ENABLE_ONEDNN_OPTS", "0")
-os.environ.setdefault("CUDA_VISIBLE_DEVICES", "-1")
+DEVICE_MODE = os.environ.get("CRYPTO_TF_DEVICE", "cpu").lower()
+if DEVICE_MODE not in ("cpu", "auto", "gpu"):
+    raise ValueError("CRYPTO_TF_DEVICE must be cpu, auto, or gpu.")
+if DEVICE_MODE == "cpu":
+    os.environ.setdefault("CUDA_VISIBLE_DEVICES", "-1")
 
 import joblib
 import numpy as np
@@ -31,6 +35,8 @@ from src.neural_data import (SEQUENCE_FEATURES, SEQUENCE_SCHEMA, TARGET_SCALE, C
 
 def tensorflow():
     import tensorflow as tf
+    if DEVICE_MODE == "gpu" and not tf.config.list_physical_devices("GPU"):
+        raise RuntimeError("GPU requested but unavailable. Select a Colab GPU runtime.")
     return tf
 
 
@@ -122,7 +128,7 @@ def train(metadata_path, lookback=48, epochs=25):
     if len(ends) < 3000:
         raise ValueError(f"Only {len(ends)} sequences; at least 3000 required for this experiment.")
     version = datetime.now(timezone.utc).strftime("tensorflow-%Y%m%dT%H%M%S%fZ")
-    output = ROOT / "models" / version
+    output = Path(os.environ.get("CRYPTO_RESEARCH_OUTPUT", str(ROOT / "models"))) / version
     output.mkdir(parents=True)
     metadata = {"version": version, "format": "keras-sequence-v1", "schema_version": SEQUENCE_SCHEMA,
         "product": "XRP-USDC", "features": SEQUENCE_FEATURES, "lookback": lookback,
@@ -214,6 +220,53 @@ def train(metadata_path, lookback=48, epochs=25):
     return output
 
 
+def prepare(metadata_path, lookback=48, epochs=25):
+    """Validate real sequences and save a reviewable plan without fitting models."""
+    frame, quality, provenance = load_development_data(metadata_path)
+    ends = sequence_ends(frame, lookback)
+    if len(ends) < 3000:
+        raise ValueError("At least 3000 valid development sequences are required.")
+    folder = ROOT / "data/processed/tensorflow_preparation"
+    folder.mkdir(parents=True, exist_ok=True)
+    report = {
+        "status": "prepared_not_trained", "lookback_hours": lookback,
+        "features": SEQUENCE_FEATURES, "eligible_sequences": len(ends),
+        "provenance": provenance, "quality": quality, "folds": [],
+        "settings": {"maximum_epochs": epochs, "batch_size": 128,
+                     "learning_rate": .001, "early_stopping_patience": 4,
+                     "dropout": .2, "seed": 42},
+        "models": {},
+        "limitations": "Development evaluation only; fresh future test required.",
+    }
+    for number, fractions in enumerate(((.50, .65, .80), (.70, .85, 1.0)), 1):
+        fold = make_fold(frame, ends, *fractions)
+        scaler, fitted_rows = fit_scaler(frame, fold.train, lookback)
+        partitions = {}
+        for name, indices in (("train", fold.train), ("validation", fold.validation),
+                              ("development_evaluation", fold.evaluation)):
+            x, y = scaled_sequences(frame, indices, scaler, lookback)
+            assert np.isfinite(x).all() and np.isfinite(y).all()
+            partitions[name] = {**partition_dates(frame, indices),
+                                "input_shape": list(x.shape), "target_shape": list(y.shape)}
+        joblib.dump(scaler, folder / f"fold_{number}_scaler.joblib")
+        report["folds"].append({
+            "number": number, "partitions": partitions,
+            "scaler_last_observation": frame.open_time.iloc[fitted_rows[-1]].isoformat(),
+        })
+    for architecture in ("gru", "lstm"):
+        model = make_model(architecture, lookback, len(SEQUENCE_FEATURES))
+        report["models"][architecture] = {
+            "parameters": model.count_params(), "input_shape": list(model.input_shape),
+            "layers": [layer.__class__.__name__ for layer in model.layers],
+        }
+    report["tensorflow_version"] = tensorflow().__version__
+    path = folder / "preparation_report.json"
+    path.write_text(json.dumps(report, indent=2), encoding="utf-8")
+    print(json.dumps(report, indent=2))
+    print("Preparation only. No market-data model training started. Report:", path)
+    return report
+
+
 def load_research_model(directory):
     folder = Path(directory).resolve()
     if not folder.is_relative_to((ROOT / "models").resolve()):
@@ -269,17 +322,17 @@ def predict_research(directory, candles, as_of=None):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=["train", "predict"])
+    parser.add_argument("command", choices=["prepare", "train", "predict"])
     parser.add_argument("--reference", default="models/coinbase-20261020T121949544468Z/metadata.json")
     parser.add_argument("--lookback", type=int, choices=[24, 48, 72], default=48)
     parser.add_argument("--epochs", type=int, default=25)
     parser.add_argument("--directory")
     parser.add_argument("--as-of")
     args = parser.parse_args()
-    if args.command == "train":
+    if args.command in ("prepare", "train"):
         if not 1 <= args.epochs <= 100:
             parser.error("epochs must be between 1 and 100")
-        train(args.reference, args.lookback, args.epochs)
+        {"prepare": prepare, "train": train}[args.command](args.reference, args.lookback, args.epochs)
     else:
         if not args.directory:
             parser.error("predict requires --directory")

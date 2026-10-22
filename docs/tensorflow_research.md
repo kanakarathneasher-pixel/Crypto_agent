@@ -17,6 +17,18 @@ The `.in` file records allowed dependencies. After verifying installation, run `
 
 ## Train
 
+First prepare and inspect the data splits without training:
+
+```powershell
+.\.venv-tf\Scripts\python.exe -m src.tensorflow_research prepare
+```
+
+This validates input sequences and saves training-only scalers and
+`data/processed/tensorflow_preparation/preparation_report.json`. It constructs
+the networks to check their architecture but does not fit them to market data.
+
+After reviewing the report, start training explicitly:
+
 ```powershell
 .\.venv-tf\Scripts\python.exe -m src.tensorflow_research train
 ```
