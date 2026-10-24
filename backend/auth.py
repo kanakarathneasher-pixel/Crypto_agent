@@ -18,6 +18,11 @@ _attempts = {}
 _attempt_lock = threading.Lock()
 
 
+def is_guest(user):
+    """Guest accounts have no password login and may only use paper trading."""
+    return user.password_hash == '!guest'
+
+
 def rate_limit(request, category="auth", maximum=10):
     key = (request.client.host if request.client else "local", category)
     now = time.monotonic()

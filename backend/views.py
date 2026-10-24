@@ -4,6 +4,7 @@ from decimal import Decimal
 import json
 from sqlalchemy import select, func
 from backend.config import config
+from src.classifier_prediction import selection_status, forecast
 from backend.models import (AgentSettings, RiskSettings, PaperBalance, PaperPosition, PaperOrder,
     PaperFill, Decision, PredictionRecord, MarketSnapshot)
 
@@ -75,7 +76,22 @@ def status(db, user_id):
     return {"mode": "paper", "running": agent.enabled and not agent.emergency_stop and config.trading_enabled,
             "requested_enabled": agent.enabled, "emergency_stop": agent.emergency_stop,
             "operator_enabled": config.trading_enabled, "trades_today": count,
-            "last_cycle": recent[0] if recent else None}
+            "last_cycle": recent[0] if recent else None,
+            "research_model": selection_status()}
+
+
+def research_forecast(db):
+    """Public market inference, exposed only behind account authentication."""
+    model = selection_status()
+    snapshot = db.get(MarketSnapshot, 'XRP-USDC')
+    if not snapshot:
+        return {'model': model, 'forecast': None, 'reason': 'Waiting for public market data.'}
+    try:
+        import pandas as pd
+        result = forecast(pd.DataFrame(json.loads(snapshot.candles_json)))
+        return {'model': model, 'forecast': result}
+    except (OSError, ValueError, KeyError) as error:
+        return {'model': model, 'forecast': None, 'reason': str(error)}
 
 
 def performance(db, user_id):
@@ -95,7 +111,10 @@ def performance(db, user_id):
 
 
 def snapshot(db, user_id):
+    from types import SimpleNamespace
+    from backend.managed_api import status as managed_status
     return {"agent": status(db, user_id), "market": market(db), "prediction": latest_prediction(db, user_id),
             "portfolio": portfolio(db, user_id), "settings": settings(db, user_id),
             "trades": trades(db, user_id, 20), "decisions": decisions(db, user_id, 20),
-            "performance": performance(db, user_id)}
+            "performance": performance(db, user_id), "research": research_forecast(db),
+            "managed": managed_status(user=SimpleNamespace(id=user_id), db=db)}

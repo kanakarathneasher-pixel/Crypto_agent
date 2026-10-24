@@ -1,6 +1,11 @@
 # Orbit — Coinbase paper-trading research agent
 
-An integrated local Python/FastAPI + Next.js application for **XRP-USDC spot paper trading**. The background worker monitors Coinbase public data while FastAPI runs. Each user has authenticated, isolated settings, balances, positions, decisions, orders and fills. The chatbot has read-only tools. No live order adapter or private Coinbase credentials exist.
+An integrated local Python/FastAPI + Next.js application for **XRP-USDC spot paper trading**. The background worker monitors Coinbase public data while FastAPI runs. Each user has authenticated, isolated settings, balances, positions, decisions, orders and fills. The chatbot has read-only tools. A separately gated live adapter is implemented but disabled and has not been exercised against a real account.
+
+See [managed agent setup, model contract, dashboard APIs, recovery and tests](docs/managed-agent.md) for the new persistent execution service. Initialize it in the dashboard's **Managed spot agent** panel. The existing classifier remains observation-only; no model was retrained or automatically approved.
+
+The dashboard opens directly with an isolated guest paper workspace. No sign-in
+or registration is required. Guest access cannot enable live trading.
 
 **Current research result: no model qualified for promotion.** Monitoring and autonomous HOLD decisions work, but model-driven fills are blocked. The old Binance pipeline, dataset and experimental model are preserved. See [actual data, model and backtest results](docs/research_results.md).
 
@@ -30,7 +35,7 @@ npm.cmd ci
 npm.cmd run dev
 ```
 
-Open **http://localhost:3000**, create a personal local account with a password of at least 12 characters, and use Start paper agent. API documentation: **http://127.0.0.1:8000/docs**. Keep the frontend URL on `localhost` to match `ALLOWED_ORIGIN`. The development server binds loopback; hosted/mobile-device access requires a deliberately configured network deployment.
+Open **http://localhost:3000** for direct guest access, then initialize the Managed spot agent panel. API documentation: **http://127.0.0.1:8000/docs**. Keep the frontend URL on `localhost` to match `ALLOWED_ORIGIN`. Both backend and frontend must remain running. Starting only Next.js leaves `/api/*` requests unable to reach the backend on port 8000. The development server binds loopback; hosted/mobile-device access requires a deliberately configured network deployment.
 
 For a production frontend build locally:
 

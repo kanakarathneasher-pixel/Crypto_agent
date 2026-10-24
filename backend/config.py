@@ -1,4 +1,4 @@
-"""Validated local configuration. There is deliberately no live-trading mode."""
+"""Validated local configuration. Live execution is separately gated and off by default."""
 from decimal import Decimal
 from typing import Literal
 from pydantic import Field
@@ -18,10 +18,14 @@ class Config(BaseSettings):
     estimated_slippage_rate: Decimal = Field(Decimal("0.001"), ge=0, le=Decimal("0.05"))
     max_daily_loss_usdc: Decimal = Field(Decimal("25"), gt=0, le=10000)
     model_path: str = "models/approved.json"
+    live_execution_enabled: bool = False
+    live_owner_user_id: int | None = None
+    coinbase_key_name: str = ''
+    coinbase_private_key: str = ''
     openai_api_key: str = ""
     openai_model: str = ""
     worker_enabled: bool = True
-    worker_poll_seconds: int = Field(30, ge=10, le=3600)
+    worker_poll_seconds: int = Field(2, ge=2, le=3600)
     cookie_secure: bool = False  # True behind HTTPS outside local development.
     allowed_origin: str = "http://localhost:3000"
 

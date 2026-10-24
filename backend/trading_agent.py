@@ -11,7 +11,8 @@ from backend.risk_manager import RiskContext, approve, signal_for, down
 D = Decimal
 
 
-def execute_cycle(session, user_id, market, prediction=None, prediction_error=None, now=None):
+def execute_cycle(session, user_id, market, prediction=None, prediction_error=None, now=None,
+                  advisory=None, advisory_error=None):
     """Caller owns transaction. Serialize user updates before examining risk state."""
     now = now or datetime.now(timezone.utc)
     if session.bind.dialect.name == "sqlite":
@@ -56,9 +57,17 @@ def execute_cycle(session, user_id, market, prediction=None, prediction_error=No
     context = RiskContext(config.trading_enabled and settings.enabled, settings.emergency_stop, fresh,
         prediction is not None, prediction_valid, trades_today, loss, balance.usdc, position.quantity, price)
     notional, reason = approve(signal, context, settings, risk)
+    advisory_note = None
+    if advisory:
+        advisory_note = (f"Research classifier {advisory['version']}: {advisory['direction']}, "
+                         f"P(UP)={advisory['probability_up']:.4f}. Observation only; not order input.")
+        session.add(ExecutionLog(user_id=user_id, level='INFO',
+                                 message='Research forecast: ' + json.dumps(advisory)))
+    elif advisory_error:
+        advisory_note = 'Research forecast unavailable: ' + advisory_error
     decision = Decision(user_id=user_id, product=settings.product, candle_time=candle_time,
         signal=signal, action=signal if notional > 0 else "HOLD",
-        reason=" ".join(filter(None, [explanation, reason, prediction_error])),
+        reason=" ".join(filter(None, [explanation, reason, prediction_error, advisory_note])),
         equity=equity, prediction_id=prediction_id)
     session.add(decision)
     session.flush()

@@ -9,7 +9,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from argon2.exceptions import VerificationError, InvalidHashError
-from backend.auth import current_user, issue_session, passwords, rate_limit, _dummy_hash
+from backend.auth import current_user, issue_session, passwords, rate_limit, _dummy_hash, is_guest
 from backend.config import config
 from backend.database import session_dependency
 from backend.models import User, AuthSession, AgentSettings, RiskSettings, PaperBalance, PaperPosition, MarketSnapshot, ExecutionLog
@@ -18,6 +18,8 @@ from backend import views
 from backend.chat import answer
 from backend.worker import Worker
 from src.prediction import load_approved
+from backend.managed_api import router as managed_router
+from backend.xrp_chart import router as chart_router, ticker as chart_ticker
 
 worker = Worker()
 
@@ -26,11 +28,15 @@ worker = Worker()
 async def lifespan(app):
     if config.worker_enabled:
         worker.start()
+        chart_ticker.start()
     yield
     worker.stop()
+    chart_ticker.stop()
 
 
 app = FastAPI(title="Crypto Agent · Paper only", version="1.0.0", lifespan=lifespan)
+app.include_router(managed_router)
+app.include_router(chart_router)
 app.add_middleware(CORSMiddleware, allow_origins=[config.allowed_origin], allow_credentials=True,
                    allow_methods=["GET", "POST", "PUT"], allow_headers=["Content-Type", "X-Requested-With"])
 
@@ -75,6 +81,32 @@ def register(body: Credentials, request: Request, response: Response, db=Depends
         db.rollback()
         raise HTTPException(409, "Username unavailable.") from None
     return {"id": user.id, "username": user.username}
+
+
+@app.post('/auth/guest')
+def guest(request: Request, response: Response, db=Depends(session_dependency)):
+    """Open the dashboard without credentials, retaining browser session isolation."""
+    try:
+        user = current_user(request, db)
+        return {'id': user.id, 'username': user.username, 'guest': is_guest(user)}
+    except HTTPException as error:
+        if error.status_code != 401:
+            raise
+    rate_limit(request, category='guest', maximum=10)
+    import secrets
+    user = User(username='guest_'+secrets.token_hex(16), password_hash='!guest')
+    db.add(user)
+    db.flush()
+    db.add_all([
+        AgentSettings(user_id=user.id, fee_rate=config.estimated_fee_rate, slippage_rate=config.estimated_slippage_rate),
+        RiskSettings(user_id=user.id, max_trades_per_day=config.max_trades_per_day,
+                     max_position_usdc=config.max_position_usdc, max_daily_loss_usdc=config.max_daily_loss_usdc),
+        PaperBalance(user_id=user.id, usdc=config.initial_paper_balance_usdc, initial_usdc=config.initial_paper_balance_usdc),
+        PaperPosition(user_id=user.id, product='XRP-USDC'),
+    ])
+    issue_session(db, user, response)
+    db.commit()
+    return {'id': user.id, 'username': user.username, 'guest': True}
 
 
 @app.post("/auth/login")
@@ -135,6 +167,11 @@ def status(user=Depends(current_user), db=Depends(session_dependency)):
     return views.status(db, user.id)
 
 
+@app.get('/agent/research/latest')
+def research_latest(user=Depends(current_user), db=Depends(session_dependency)):
+    return views.research_forecast(db)
+
+
 @app.get("/agent/settings")
 def get_settings(user=Depends(current_user), db=Depends(session_dependency)):
     return views.settings(db, user.id)
@@ -154,6 +191,9 @@ def update_settings(body: SettingsInput, user=Depends(current_user), db=Depends(
 
 @app.post("/agent/start")
 def start(user=Depends(current_user), db=Depends(session_dependency)):
+    from backend.managed_models import ManagedAgent
+    if db.get(ManagedAgent, user.id):
+        raise HTTPException(409, 'Use the Managed spot agent controls for this account.')
     settings = db.get(AgentSettings, user.id)
     if settings.emergency_stop:
         raise HTTPException(409, "Clear emergency stop in settings first.")
