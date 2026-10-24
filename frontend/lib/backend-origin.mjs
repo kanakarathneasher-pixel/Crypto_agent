@@ -1,4 +1,4 @@
-/** Server-only rewrite destination. Do not put credentials in this URL. */
+/** Server-only runtime API destination. Do not put credentials in this URL. */
 export function resolveBackendOrigin(env = process.env) {
   const hosted = env.VERCEL === '1';
   const configured = env.BACKEND_URL?.trim();

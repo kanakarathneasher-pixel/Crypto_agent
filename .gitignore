@@ -49,6 +49,7 @@ htmlcov/
 coverage/
 
 # Frontend dependencies and generated output
+.vercel/
 node_modules/
 .next/
 out/

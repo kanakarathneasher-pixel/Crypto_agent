@@ -4,6 +4,11 @@ The existing application has two running services: a Next.js dashboard and a
 Python FastAPI backend. Uploading the frontend to Vercel does not start
 `backend.main:app` on your computer or deploy its worker automatically.
 
+The self-contained frontend layout and commands are documented in
+[`frontend/README.md`](../frontend/README.md). No Python installation is needed
+in the Vercel build. The app's own `frontend/vercel.json` declares the Next.js
+framework and npm commands.
+
 ## 1. Deploy the Python backend
 
 Run the repository root on a continuously running Python host with HTTPS,
@@ -60,15 +65,19 @@ Use the existing GitHub repository:
 - Environment variable, in the selected deployment environment:
   `BACKEND_URL=https://YOUR-PUBLIC-PYTHON-BACKEND`.
 
-`BACKEND_URL` is a server-side build setting. It must be the HTTPS origin only,
+`BACKEND_URL` is a server-side runtime setting. It must be the HTTPS origin only,
 without `/api`, credentials, or another path. This repository's backend endpoints
 are `/auth/guest`, `/market/latest`, etc., rather than `/api/auth/guest`.
-After changing it, **redeploy** the frontend; existing builds keep their rewrites.
-Vercel builds deliberately fail when BACKEND_URL is missing or points at localhost.
+After changing it, **redeploy** the frontend so the new deployment receives it.
+The frontend can build with no backend configured. API calls then return a
+clear JSON 503 setup response. Invalid or local backend origins on Vercel are
+also rejected at request time rather than breaking the entire dashboard build.
 
-The browser continues using `/api/*` on the dashboard origin. The Next.js external
-rewrite proxies to the Python backend and passes cookies, keeping guest sessions
-on the dashboard's origin. Do not change the browser to call the backend directly;
+The browser continues using `/api/*` on the dashboard origin. A Node.js route
+handler in `frontend/app/api/[...path]/route.ts` proxies to the Python backend
+and passes cookies, keeping guest sessions on the dashboard's origin. It forwards
+CSRF and Origin headers, disables response caching, and streams SSE directly.
+Do not change the browser to call the backend directly;
 that would require a different cross-site cookie design.
 
 ## 3. Verify
@@ -80,7 +89,9 @@ that would require a different cross-site cookie design.
 4. The chart should show live data or an honest stale/reconnecting state.
 
 If `/api/health` is 404, inspect the Vercel root directory, framework and deployed
-rewrites. If health works but guest access is 404, check that the backend has
+route handler. If it returns JSON 503, configure BACKEND_URL. A JSON 502 indicates
+an unreachable backend; JSON 504 indicates a response-header timeout.
+If health works but guest access is 404, check that the backend has
 the current `/auth/guest` endpoint and BACKEND_URL has no extra `/api` prefix.
 403 on guest access usually means ALLOWED_ORIGIN does not exactly match the
 dashboard domain. Repeated 401 after successful guest creation means the cookie
