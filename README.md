@@ -7,6 +7,9 @@ See [managed agent setup, model contract, dashboard APIs, recovery and tests](do
 The dashboard opens directly with an isolated guest paper workspace. No sign-in
 or registration is required. Guest access cannot enable live trading.
 
+Hosting on Vercel requires a separately running Python backend and the frontend
+`BACKEND_URL` setting. Follow [Vercel deployment and 404 troubleshooting](docs/vercel-deployment.md).
+
 **Current research result: no model qualified for promotion.** Monitoring and autonomous HOLD decisions work, but model-driven fills are blocked. The old Binance pipeline, dataset and experimental model are preserved. See [actual data, model and backtest results](docs/research_results.md).
 
 ## Windows setup and run

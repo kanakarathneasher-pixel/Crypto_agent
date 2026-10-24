@@ -37,3 +37,16 @@ test('successful HTML response is rejected without exposing its content', async 
   try {await assert.rejects(requestJson('/agent/status'), /returned an invalid response/);}
   finally {globalThis.fetch = original;}
 });
+
+test('hosted 404 points to Vercel configuration instead of local port instructions', async () => {
+  const originalFetch = globalThis.fetch;
+  const originalWindow = globalThis.window;
+  globalThis.window = {location:{hostname:'dashboard.vercel.app'}};
+  globalThis.fetch = async () => new Response(JSON.stringify({detail:'Not Found'}), {status:404});
+  try {await assert.rejects(requestJson('/auth/guest','POST'), /Check BACKEND_URL in Vercel/);}
+  finally {
+    globalThis.fetch = originalFetch;
+    if (originalWindow === undefined) delete globalThis.window;
+    else globalThis.window = originalWindow;
+  }
+});
