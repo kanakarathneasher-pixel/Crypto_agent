@@ -1,6 +1,6 @@
 'use client';
 import {useEffect, useRef, useState} from 'react';
-import {requestJson as api} from '../lib/api';
+import {requestJson as api} from '../../lib/api';
 
 type GoogleConfig = {enabled:boolean; client_id:string; linked:boolean; email:string|null};
 type Identity = {

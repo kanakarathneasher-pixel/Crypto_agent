@@ -1,6 +1,6 @@
 'use client';
 import {useEffect, useMemo, useRef, useState} from 'react';
-import {requestJson} from '../lib/api';
+import {requestJson} from '../../lib/api';
 
 type Point = {time:number; price:string};
 type History = {points:Point[]; interval_seconds:number; period:string};

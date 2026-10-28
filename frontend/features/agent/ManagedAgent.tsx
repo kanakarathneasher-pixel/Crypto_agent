@@ -1,6 +1,7 @@
 'use client';
-import {useEffect, useState} from 'react';
-import {requestJson} from '../lib/api';
+import {useCallback, useEffect, useRef, useState} from 'react';
+import {requestJson} from '../../lib/api';
+import {DASHBOARD_REFRESH_MS} from '../../lib/dashboard';
 
 type Row = Record<string, any>;
 async function call(path: string, method = 'GET', body?: unknown) {
@@ -12,19 +13,21 @@ export default function ManagedAgent() {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [settings, setSettings] = useState('');
-  const refresh = () => call('status').then(setState).catch(e => setError(e.message));
+  const pending = useRef<Promise<void>|null>(null);
+  const refresh = useCallback(() => {
+    if(!pending.current) pending.current=call('status').then(value=>{setState(value);setError('');})
+      .catch(e=>setError(e.message)).finally(()=>{pending.current=null;});
+    return pending.current;
+  },[]);
   useEffect(() => {
     refresh();
-    let refreshing = false;
-    const timer = setInterval(async () => {
-      if (refreshing) return;
-      refreshing = true;
-      try {await refresh();} finally {refreshing = false;}
-    }, 2000);
+    const update=()=>{if(document.visibilityState==='visible') void refresh();};
+    const timer = setInterval(update, DASHBOARD_REFRESH_MS);
     const events = new EventSource('/api/v2/agent/events', {withCredentials:true});
-    events.addEventListener('activity', refresh);
-    return () => {clearInterval(timer); events.close();};
-  }, []);
+    events.addEventListener('activity', update);
+    document.addEventListener('visibilitychange',update);
+    return () => {clearInterval(timer); events.close();document.removeEventListener('visibilitychange',update);};
+  }, [refresh]);
   async function command(action: string) {
     setBusy(true); setError('');
     try {await call('commands','POST',{action,request_id:crypto.randomUUID()}); await refresh();}
@@ -39,7 +42,7 @@ export default function ManagedAgent() {
     <div className="panel-heading"><div><h3>Managed spot agent</h3><p>Persistent orders, risk controls and position monitoring</p></div>
       <span className="badge">{state?.mode?.toUpperCase() || 'PAPER'} / {state?.phase || 'NOT CONFIGURED'}</span></div>
     {error && <p role="alert" className="error">{error}</p>}
-    {!state?.configured ? <><p>Initialize a separate managed paper ledger. Your earlier paper history remains available below.</p>
+    {!state?<p role="status">{error?'Agent status is unavailable.':'Loading your agent…'}</p>:!state.configured ? <><p>Initialize a separate managed paper ledger. Your earlier paper history remains available below.</p>
       <button className="primary" disabled={busy} onClick={configure}>Initialize paper agent</button></> : <>
       <p>Reconciliation: {state.reconciled ? 'complete' : 'pending'} · Last check: {state.last_reconciled || 'waiting for worker'}</p>
       <p>USDC: {state.wallet.cash} · XRP: {state.wallet.quantity} · Equity: {state.equity ?? 'unavailable'} · Total P&amp;L: {state.total_pnl ?? 'unavailable'}</p>

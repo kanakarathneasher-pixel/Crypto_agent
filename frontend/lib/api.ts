@@ -1,4 +1,13 @@
 /** Parse API failures safely, including plain-text errors from the Next proxy. */
+export class ApiError extends Error {
+  status: number;
+  constructor(message:string, status:number) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+  }
+}
+
 export async function requestJson(path: string, method = 'GET', body?: unknown) {
   const hosted = typeof window !== 'undefined' && !['localhost', '127.0.0.1', '[::1]'].includes(window.location.hostname);
   const routingError = (status:number) => hosted
@@ -12,7 +21,7 @@ export async function requestJson(path: string, method = 'GET', body?: unknown) 
       body: body === undefined ? undefined : JSON.stringify(body),
     });
   } catch {
-    throw new Error('Cannot reach the dashboard service. Check that the frontend and Python backend are running.');
+    throw new ApiError('Cannot reach Orbit. Check your connection and try again.', 0);
   }
   const text = await response.text();
   let data;
@@ -21,14 +30,14 @@ export async function requestJson(path: string, method = 'GET', body?: unknown) 
   } catch {
     // Never render raw HTML, server tracebacks, or proxy response text.
     if (!response.ok) {
-      throw new Error(routingError(response.status));
+      throw new ApiError(routingError(response.status), response.status);
     }
-    throw new Error(`Dashboard API ${path} returned an invalid response. Restart the backend and retry.`);
+    throw new ApiError(`Dashboard API ${path} returned an invalid response. Retry in a moment.`, 502);
   }
   if (!response.ok) {
-    if (response.status === 404) throw new Error(routingError(response.status));
-    throw new Error(typeof data?.detail === 'string' ? data.detail :
-      `Request ${path} failed (HTTP ${response.status}). Check your entries or the backend terminal.`);
+    if (response.status === 404) throw new ApiError(routingError(response.status), response.status);
+    throw new ApiError(typeof data?.detail === 'string' ? data.detail :
+      `Request ${path} failed (HTTP ${response.status}). Please try again.`, response.status);
   }
   return data;
 }

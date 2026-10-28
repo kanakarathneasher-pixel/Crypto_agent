@@ -14,10 +14,10 @@ from sqlalchemy import delete, select
 from sqlalchemy.exc import IntegrityError
 
 from backend.auth import current_user, is_guest, issue_session, rate_limit
+from backend.accounts import create_account
 from backend.config import config
 from backend.database import session_dependency
-from backend.models import (AuthSession, GoogleIdentity, GoogleLoginChallenge, User,
-                            AgentSettings, RiskSettings, PaperBalance, PaperPosition)
+from backend.models import AuthSession, GoogleIdentity, GoogleLoginChallenge, User
 
 router = APIRouter(prefix='/auth/google', tags=['Google sign-in'])
 google_keys = jwt.PyJWKClient('https://www.googleapis.com/oauth2/v3/certs', timeout=5)
@@ -112,16 +112,7 @@ def sign_in(body: GoogleCredential, request: Request, response: Response,
     elif identity:
         target = db.get(User, identity.user_id)
     else:
-        target = User(username='google_' + secrets.token_hex(12), password_hash='!google')
-        db.add(target)
-        db.flush()
-        db.add_all([
-            AgentSettings(user_id=target.id, fee_rate=config.estimated_fee_rate, slippage_rate=config.estimated_slippage_rate),
-            RiskSettings(user_id=target.id, max_trades_per_day=config.max_trades_per_day,
-                         max_position_usdc=config.max_position_usdc, max_daily_loss_usdc=config.max_daily_loss_usdc),
-            PaperBalance(user_id=target.id, usdc=config.initial_paper_balance_usdc, initial_usdc=config.initial_paper_balance_usdc),
-            PaperPosition(user_id=target.id, product='XRP-USDC'),
-        ])
+        target = create_account(db, 'google_' + secrets.token_hex(12), '!google')
     if not identity:
         db.add(GoogleIdentity(subject=claims['sub'], user_id=target.id, email=claims['email']))
     else:

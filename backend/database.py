@@ -5,7 +5,9 @@ from backend.config import config
 
 
 def make_engine(url):
-    engine = create_engine(url, connect_args={"check_same_thread": False, "timeout": 30} if url.startswith("sqlite") else {})
+    engine = create_engine(url, pool_pre_ping=True,
+                           connect_args={"check_same_thread": False, "timeout": 30} if url.startswith("sqlite") else {},
+                           **({} if url.startswith('sqlite') else {'pool_size': 5, 'max_overflow': 2, 'pool_timeout': 10}))
     if url.startswith("sqlite"):
         @event.listens_for(engine, "connect")
         def sqlite_options(connection, record):

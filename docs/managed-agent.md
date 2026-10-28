@@ -75,8 +75,10 @@ scheduler per database on this machine, including during reloads. Run all backen
 processes from this root. This is a single-host prototype; multi-host deployment
 requires a database-backed worker lease, shared clock and operational monitoring.
 
-Live price and dashboard polling target a two-second interval
-(`WORKER_POLL_SECONDS=2`). Network latency, rate-limit backoff, and processing may
+The live chart retains its two-second fallback, while account summaries and
+managed status refresh every 15 seconds in a visible tab. Backend worker polling
+is configured separately (`WORKER_POLL_SECONDS=2` locally, 30 in the Render
+Blueprint). Network latency, rate-limit backoff, and processing may
 delay individual updates; requests do not overlap. The hourly candle chart only
 adds a point when a candle completes. The backend reuses completed history until
 the next UTC hourly boundary and retries delayed boundary candles after 30 seconds.

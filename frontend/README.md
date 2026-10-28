@@ -6,10 +6,14 @@ trading worker are not part of this deployment.
 
 ```
 frontend/
-  app/                       Dashboard pages, styles and chart components
+  app/                       Workspace shell, styles and connection screen
     api/[...path]/route.ts   Same-origin API proxy on the Node.js runtime
+  features/                  Account, dashboard, managed agent and market UI
+  hooks/useWorkspace.ts      Session startup and visible-tab summary refresh
   lib/
     api.ts                   Browser JSON/error handling
+    workspace.ts             Bounded readiness retry; no mutation replay
+    dashboard.ts             Dashboard response shape and refresh interval
     backend-origin.mjs       Backend URL validation, used only on the server
     backend-proxy.ts         Cookies, timeouts and streaming to Python
   tests/                     API routing, session and deployment tests
@@ -94,14 +98,18 @@ Authorization responses from Python retain their original status. The proxy
 does not retry order/control requests or follow redirects. Headers must arrive
 within 15 seconds; established event streams last until the client/platform
 disconnects them. The route declares a 60-second Vercel function duration, so
-EventSource reconnects and the existing two-second polling fallback remain useful.
+EventSource reconnects and the chart's two-second fallback remain useful. Account
+summaries and managed status refresh every 15 seconds while visible. Account
+summary polling pauses on the Account screen. Startup waits for backend readiness
+before opening a workspace, so transient Render cold starts can recover.
 
 After deployment verify `/api/health`, then open the dashboard and confirm that
 `POST /api/auth/guest` creates a guest session without a login screen.
 
 ## Verification of this structure
 
-The 14 frontend tests and TypeScript checks passed. An isolated frontend-only
+The frontend tests and TypeScript checks cover API boundaries and startup
+recovery. An isolated frontend-only
 production build passed with `VERCEL=1` and no `BACKEND_URL`, Python installation,
 model files or datasets in the build directory. A production preview served the
 page with HTTP 200 and an actionable API 503 when unconfigured. With a running

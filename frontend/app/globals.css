@@ -1,5 +1,16 @@
 @import "tailwindcss";
 
+.workspace-gate{min-height:100vh;display:grid;place-items:center;padding:24px}
+.workspace-gate-card{width:min(100%,520px);padding:40px!important;display:grid;gap:24px}
+.workspace-gate-card h1{font-size:34px}.workspace-gate-card .primary{justify-self:start}
+.connection-progress{height:4px;background:var(--blue-soft);border-radius:4px;overflow:hidden}
+.connection-progress::after{content:"";display:block;height:100%;width:40%;background:var(--blue);animation:connect 1.8s ease-in-out infinite alternate}
+@keyframes connect{to{transform:translateX(150%)}}
+@media(prefers-reduced-motion:reduce){.connection-progress::after{animation:none;width:100%}}
+.connection-banner,.guest-banner{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:18px 22px;border:1px solid var(--info-border);background:var(--info-bg);border-radius:14px;margin-bottom:20px}
+.connection-banner{color:var(--info-text)}.guest-banner p{margin-top:4px}.sync-caption{font-size:12px;margin:0 0 20px}
+@media(max-width:640px){.connection-banner,.guest-banner{align-items:flex-start;flex-direction:column}.workspace-gate-card{padding:28px!important}}
+
 /* CSS follows the browser's color preference immediately, including live changes. */
 :root {
   color-scheme: light;

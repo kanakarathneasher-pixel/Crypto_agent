@@ -23,6 +23,9 @@ application to Vercel, with Root Directory `frontend`. Follow
 For a free backend demo, use the [Render deployment guide](docs/render-deployment.md)
 and repository-root `render.yaml`, with external PostgreSQL for persistent accounts.
 
+See [application structure and integration boundaries](docs/application-structure.md)
+for the frontend features, backend routes, session flow and deployment order.
+
 **Current research result: no model qualified for promotion.** Monitoring and autonomous HOLD decisions work, but model-driven fills are blocked. The old Binance pipeline, dataset and experimental model are preserved. See [actual data, model and backtest results](docs/research_results.md).
 
 ## Windows setup and run
@@ -61,7 +64,7 @@ npm.cmd run build
 npm.cmd run start
 ```
 
-The Next.js `/api/*` proxy connects to FastAPI on 127.0.0.1:8000. The UI polls account data every 30 seconds; the backend polls public Coinbase data independently. Start/Stop changes only the authenticated user's state. Missing models produce logged HOLD explanations. An empty trade history is expected until an eligible model is explicitly promoted and all deterministic controls pass.
+The Next.js `/api/*` proxy connects to FastAPI on 127.0.0.1:8000. The UI refreshes one account summary every 15 seconds while visible, pausing on Account; live prices update independently. The backend polls public Coinbase data independently. Start/Stop changes only the authenticated user's state. Missing models produce logged HOLD explanations. An empty trade history is expected until an eligible model is explicitly promoted and all deterministic controls pass.
 
 ## Data and research commands
 
@@ -128,12 +131,12 @@ Tests cover downloader retries/resume/backups, timestamp parsing, invalid candle
 | Model comparison, promotion and backtest | `src/research.py`, `src/backtest.py` |
 | Exact-schema approved-model inference | `src/prediction.py` |
 | Account/session security and Pydantic validation | `backend/auth.py`, `backend/schemas.py` |
-| FastAPI routes and read-only account views | `backend/main.py`, `backend/views.py` |
+| FastAPI composition, domain routes and read-only views | `backend/main.py`, `backend/routes/`, `backend/views.py` |
 | Deterministic risk and transactional paper execution | `backend/risk_manager.py`, `backend/trading_agent.py` |
 | Public monitoring and one scheduler | `backend/coinbase_client.py`, `backend/worker.py` |
 | SQLAlchemy models and Alembic schema revisions | `backend/models.py`, `migrations/` |
 | Read-only OpenAI integration | `backend/chat.py` |
-| Responsive authenticated dashboard | `frontend/app/` |
+| Responsive dashboard and account features | `frontend/app/`, `frontend/features/`, `frontend/hooks/` |
 
 The schema stores monetary/quantity values as integers scaled by 100,000,000, avoiding SQLite floating-point storage. User-scoped database queries derive identity from a hashed, revocable, 12-hour opaque session, never a requested user ID. Passwords use Argon2; cookies are HttpOnly and SameSite Strict. State-changing browser calls require an allowed origin and custom CSRF header. Local authentication/chat rate limiting is in-process; hosted multi-worker deployment needs a shared limiter. There are no default accounts or hardcoded secrets. Future exchange integration may store only a vault reference, never plaintext credentials.
 
