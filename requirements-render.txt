@@ -1,0 +1,3 @@
+-r requirements.txt
+# PostgreSQL driver; bundled libpq avoids a system package requirement.
+psycopg[binary]>=3.2,<4

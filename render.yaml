@@ -1,0 +1,31 @@
+services:
+  - type: web
+    name: orbit-backend
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements-render.txt
+    startCommand: python scripts/render_start.py
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.14.8
+      - key: DATABASE_URL
+        sync: false
+      - key: ALLOWED_ORIGIN
+        sync: false
+      - key: COOKIE_SECURE
+        value: "true"
+      - key: TRADING_MODE
+        value: paper
+      - key: TRADING_ENABLED
+        value: "false"
+      - key: LIVE_EXECUTION_ENABLED
+        value: "false"
+      - key: WORKER_ENABLED
+        value: "true"
+      - key: WORKER_POLL_SECONDS
+        value: "30"
+      - key: OMP_NUM_THREADS
+        value: "1"
+      - key: OPENBLAS_NUM_THREADS
+        value: "1"
