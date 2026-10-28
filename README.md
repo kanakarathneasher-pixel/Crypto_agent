@@ -7,6 +7,14 @@ See [managed agent setup, model contract, dashboard APIs, recovery and tests](do
 The dashboard opens directly with an isolated guest paper workspace. No sign-in
 or registration is required. Guest access cannot enable live trading.
 
+To test real account balances for your own Coinbase account, open **Account** in
+the dashboard and follow [the View-only account setup](docs/coinbase-account-setup.md).
+This owner-only connection keeps exchange holdings separate from simulated funds.
+
+The Account page also supports **Continue with Google** for sign-in or linking an
+existing Orbit account. Configure a Google Web client ID using the
+[Google sign-in setup guide](docs/google-signin-setup.md).
+
 Hosting on Vercel requires a separately running Python backend and the frontend
 `BACKEND_URL` setting. Deploy only the self-contained [`frontend/`](frontend/README.md)
 application to Vercel, with Root Directory `frontend`. Follow

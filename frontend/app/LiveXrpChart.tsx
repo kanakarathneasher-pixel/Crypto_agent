@@ -83,9 +83,9 @@ export default function LiveXrpChart() {
         for(let i=1;i<points.length;i++) if(Math.abs(points[i].time-target)<Math.abs(points[index].time-target)) index=i;
         setHover(index);
       }}>
-        {[40,130,220].map((level,i)=><g key={level}><line x1="20" x2="880" y1={level} y2={level} stroke="#263038" strokeDasharray="3 5"/><text x="24" y={level-8} fill="#8d9da5" fontSize="10">{formatPrice(high-i*spread/2)}</text></g>)}
-        <path d={path} fill="none" stroke="#5284ff" strokeWidth="2.4" vectorEffect="non-scaling-stroke"/>
-        {selected&&<><line x1={x(selected.time)} x2={x(selected.time)} y1="30" y2="230" stroke="#718099" strokeDasharray="4 4"/><circle cx={x(selected.time)} cy={y(Number(selected.price))} r="4" fill="#5284ff"/></>}
+        {[40,130,220].map((level,i)=><g key={level}><line x1="20" x2="880" y1={level} y2={level} stroke="var(--line)" strokeDasharray="3 5"/><text x="24" y={level-8} fill="var(--muted)" fontSize="10">{formatPrice(high-i*spread/2)}</text></g>)}
+        <path d={path} fill="none" stroke="var(--blue)" strokeWidth="2.4" vectorEffect="non-scaling-stroke"/>
+        {selected&&<><line x1={x(selected.time)} x2={x(selected.time)} y1="30" y2="230" stroke="var(--chart-crosshair)" strokeDasharray="4 4"/><circle cx={x(selected.time)} cy={y(Number(selected.price))} r="4" fill="var(--blue)"/></>}
       </svg></div><div className="chart-dates"><span>{formatTime(first)}</span><span>{formatTime(last)}</span></div>
     </>}
     <div className="chart-footer"><span>Exchange reference curve; Coinbase.com may differ. Missing intervals are not filled.</span>

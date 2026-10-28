@@ -20,6 +20,8 @@ from backend.worker import Worker
 from src.prediction import load_approved
 from backend.managed_api import router as managed_router
 from backend.xrp_chart import router as chart_router, ticker as chart_ticker
+from backend.coinbase_account import router as coinbase_account_router
+from backend.google_auth import router as google_auth_router
 
 worker = Worker()
 
@@ -37,6 +39,8 @@ async def lifespan(app):
 app = FastAPI(title="Crypto Agent · Paper only", version="1.0.0", lifespan=lifespan)
 app.include_router(managed_router)
 app.include_router(chart_router)
+app.include_router(coinbase_account_router)
+app.include_router(google_auth_router)
 app.add_middleware(CORSMiddleware, allow_origins=[config.allowed_origin], allow_credentials=True,
                    allow_methods=["GET", "POST", "PUT"], allow_headers=["Content-Type", "X-Requested-With"])
 

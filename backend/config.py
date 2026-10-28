@@ -22,12 +22,17 @@ class Config(BaseSettings):
     live_owner_user_id: int | None = None
     coinbase_key_name: str = ''
     coinbase_private_key: str = ''
+    # Separate credentials for the owner's read-only account test; never used by execution.
+    coinbase_readonly_owner_user_id: int | None = None
+    coinbase_readonly_key_name: str = ''
+    coinbase_readonly_private_key: str = ''
     openai_api_key: str = ""
     openai_model: str = ""
     worker_enabled: bool = True
     worker_poll_seconds: int = Field(2, ge=2, le=3600)
     cookie_secure: bool = False  # True behind HTTPS outside local development.
     allowed_origin: str = "http://localhost:3000"
+    google_client_id: str = ''
 
 
 config = Config()

@@ -40,6 +40,21 @@ class AuthSession(Base):
     expires_at: Mapped[str] = mapped_column(String(40))
 
 
+class GoogleIdentity(Base):
+    __tablename__ = 'google_identities'
+    subject: Mapped[str] = mapped_column(String(255), primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey('users.id'), unique=True)
+    email: Mapped[str] = mapped_column(String(320))
+
+
+class GoogleLoginChallenge(Base):
+    __tablename__ = 'google_login_challenges'
+    token_hash: Mapped[str] = mapped_column(String(64), primary_key=True)
+    session_hash: Mapped[str] = mapped_column(String(64), index=True)
+    nonce_hash: Mapped[str] = mapped_column(String(64))
+    expires_at: Mapped[str] = mapped_column(String(40))
+
+
 class AgentSettings(Base):
     __tablename__ = "agent_settings"
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), primary_key=True)

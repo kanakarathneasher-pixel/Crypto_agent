@@ -35,7 +35,7 @@ export default function ManagedAgent() {
     try {await call('configuration','PUT',{mode:'paper',settings:settings ? JSON.parse(settings) : {}}); await refresh();}
     catch(e) {setError((e as Error).message);} finally {setBusy(false);}
   }
-  return <section className="panel settings-panel">
+  return <section className="panel settings-panel managed-panel">
     <div className="panel-heading"><div><h3>Managed spot agent</h3><p>Persistent orders, risk controls and position monitoring</p></div>
       <span className="badge">{state?.mode?.toUpperCase() || 'PAPER'} / {state?.phase || 'NOT CONFIGURED'}</span></div>
     {error && <p role="alert" className="error">{error}</p>}
