@@ -9,18 +9,18 @@ can continue to use SQLite. No database schema change is required by this refact
 | Layer | Responsibility | Main files |
 | --- | --- | --- |
 | Workspace shell | Navigation, connection state, notifications | `frontend/app/page.tsx`, `frontend/hooks/useWorkspace.ts` |
-| Account feature | Password/Google access and separate Coinbase balance connection | `frontend/features/account/` |
+| Account feature | Supabase email sign-in/registration and separate Coinbase balance connection | `frontend/features/account/` |
 | Dashboard feature | Overview, activity, risk form, research, read-only chat | `frontend/features/dashboard/` |
 | Agent and market features | Managed agent controls and independent live price chart | `frontend/features/agent/`, `frontend/features/market/` |
 | Browser API client | JSON parsing, status-bearing errors, browser cookies/CSRF headers | `frontend/lib/api.ts` |
-| Workspace startup | Readiness retry and single guest/session-opening request | `frontend/lib/workspace.ts` |
+| Workspace startup | Readiness retry and read-only session restoration | `frontend/lib/workspace.ts` |
 | Vercel API boundary | Server-only backend origin, cookie forwarding and SSE streaming | `frontend/lib/backend-proxy.ts` |
 | Backend composition | Lifespan, middleware, health and router registration | `backend/main.py` |
 | Account creation | Shared initial paper balances/settings for every provider | `backend/accounts.py` |
 | Account routes | Password login, registration, guest sessions and logout | `backend/routes/auth.py` |
 | Dashboard routes/service | Authenticated summary from user-scoped views | `backend/routes/dashboard.py`, `backend/dashboard.py` |
 | Existing API | Backwards-compatible paper endpoints and chat | `backend/routes/legacy.py` |
-| External identities | Google verification and owner-only read-only Coinbase access | `backend/google_auth.py`, `backend/coinbase_account.py` |
+| External identities | Supabase email authentication, legacy Google verification and owner-only read-only Coinbase access | `backend/supabase_auth.py`, `backend/google_auth.py`, `backend/coinbase_account.py` |
 | Persistence | Pooled connections, migrations and user-keyed records | `backend/database.py`, `backend/models.py`, `migrations/` |
 
 ## Requests and sessions
@@ -32,8 +32,10 @@ on Render. Supabase is the PostgreSQL host; Orbit authentication remains in
 FastAPI, rather than Supabase Auth.
 
 Startup checks `/health` up to five times for transient network/502/504 errors.
-It then calls `/auth/guest` once to reuse the existing session or open a guest
-workspace. Configuration/authorization errors are shown immediately. Sign-in,
+It then calls `/auth/me` to restore an existing session. Missing sessions and
+legacy guest sessions show the email/password sign-in screen. Startup creates no
+guest accounts. Dashboard features and polling start after personal account sign-in.
+Configuration/authorization errors are shown immediately. Sign-in,
 account creation and agent commands are never automatically replayed.
 
 `GET /dashboard` replaces ten browser requests with one account summary.
@@ -52,8 +54,9 @@ while Render is still deploying.
 
 Every account provider uses the same workspace initializer. Returning sign-in
 reuses the existing user ID; a guest's history is not silently merged into a
-personal account. Google-only users sign in through Google. Coinbase connection
-permissions and identity linking are unchanged by the layout refactor.
+personal account. Supabase identities bind by verified user ID, never matching
+emails to existing accounts. Legacy authentication APIs remain available;
+new UI registrations use Supabase Auth. Coinbase permissions are unchanged.
 
 PostgreSQL pools are bounded to five connections plus two overflow connections
 per process, with connection health checks before reuse and a ten-second pool

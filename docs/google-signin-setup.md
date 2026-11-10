@@ -1,6 +1,10 @@
 # Google sign-in for Orbit
 
-Orbit uses the official Google Identity Services button in **Account**. It sends
+The current interface uses [Supabase email/password authentication](supabase-auth-setup.md).
+The following documents the retained legacy Google authentication API and its
+previous interface. Google configuration is not required for current registration.
+
+The legacy integration sends
 the Google ID token to the backend, which verifies its signature, issuer,
 audience, expiry, verified email and a short-lived browser-bound nonce. Tokens
 are discarded after verification; users receive Orbit's normal HttpOnly session.
@@ -26,7 +30,7 @@ GOOGLE_CLIENT_ID=YOUR_WEB_CLIENT_ID.apps.googleusercontent.com
 
 No new Python/npm dependency is needed. Keep `COOKIE_SECURE=true` for public
 HTTPS deployments. The browser loads Google's SDK only when Google sign-in is
-configured and the Account page is opened; password sign-in continues to work if
+configured and the sign-in screen or Account page is opened; password sign-in continues to work if
 the SDK is blocked.
 
 ## Apply the schema and restart
@@ -39,7 +43,7 @@ use SQLite's backup API for a consistent copy if the service is running. Then:
 .\.venv\Scripts\python.exe -m uvicorn backend.main:app --host 127.0.0.1 --port 8000
 ```
 
-Stop the previous backend before starting its replacement. Refresh **Account**
+Stop the previous backend before starting its replacement. Open Orbit's sign-in screen
 and select **Continue with Google**. Allow the Google popup. If a sign-in attempt
 expires after five minutes, use **Try Google again** to get a new challenge.
 

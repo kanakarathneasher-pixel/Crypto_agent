@@ -33,6 +33,8 @@ class Config(BaseSettings):
     cookie_secure: bool = False  # True behind HTTPS outside local development.
     allowed_origin: str = "http://localhost:3000"
     google_client_id: str = ''
+    supabase_url: str = ''
+    supabase_publishable_key: str = ''
 
 
 config = Config()

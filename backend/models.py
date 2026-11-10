@@ -40,6 +40,13 @@ class AuthSession(Base):
     expires_at: Mapped[str] = mapped_column(String(40))
 
 
+class SupabaseIdentity(Base):
+    __tablename__ = 'supabase_identities'
+    subject: Mapped[str] = mapped_column(String(36), primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey('users.id'), unique=True)
+    email: Mapped[str] = mapped_column(String(320))
+
+
 class GoogleIdentity(Base):
     __tablename__ = 'google_identities'
     subject: Mapped[str] = mapped_column(String(255), primary_key=True)

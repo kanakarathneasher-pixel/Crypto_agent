@@ -12,6 +12,7 @@ from backend.managed_api import router as managed_router
 from backend.xrp_chart import router as chart_router, ticker as chart_ticker
 from backend.coinbase_account import router as coinbase_account_router
 from backend.google_auth import router as google_auth_router
+from backend.supabase_auth import router as supabase_auth_router
 
 from backend.routes.legacy import router as legacy_router
 from backend.routes.auth import router as auth_router
@@ -35,6 +36,7 @@ app.include_router(managed_router)
 app.include_router(chart_router)
 app.include_router(coinbase_account_router)
 app.include_router(google_auth_router)
+app.include_router(supabase_auth_router)
 app.include_router(auth_router)
 app.include_router(legacy_router)
 app.include_router(dashboard_router)

@@ -39,7 +39,7 @@ export function useWorkspace(accountOnly:boolean) {
   },[]);
 
   useEffect(()=>{
-    if(!user || accountOnly || expired) return;
+    if(!user || user.guest || accountOnly || expired) return;
     const update=()=>{
       if(document.visibilityState==='visible') void refresh().catch(()=>{});
     };

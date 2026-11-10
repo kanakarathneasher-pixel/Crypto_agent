@@ -103,8 +103,11 @@ summaries and managed status refresh every 15 seconds while visible. Account
 summary polling pauses on the Account screen. Startup waits for backend readiness
 before opening a workspace, so transient Render cold starts can recover.
 
-After deployment verify `/api/health`, then open the dashboard and confirm that
-`POST /api/auth/guest` creates a guest session without a login screen.
+After deployment verify `/api/health`, then open Orbit in a signed-out browser
+and confirm the email/password sign-in screen appears before the dashboard.
+Startup checks `GET /api/auth/me` without creating guest accounts. Register
+and Sign in use Supabase Auth through the Python backend. Successful sign-in
+opens the personal workspace. See [Supabase configuration](../docs/supabase-auth-setup.md).
 
 ## Verification of this structure
 

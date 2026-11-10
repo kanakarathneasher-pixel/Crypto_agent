@@ -8,7 +8,7 @@ from sqlalchemy.exc import IntegrityError
 from backend.accounts import create_account
 from backend.auth import current_user, issue_session, passwords, rate_limit, _dummy_hash, is_guest
 from backend.database import session_dependency
-from backend.models import AuthSession, User
+from backend.models import AuthSession, SupabaseIdentity, User
 from backend.schemas import Credentials
 
 router = APIRouter(prefix='/auth', tags=['Accounts'])
@@ -72,5 +72,9 @@ def logout(request: Request, response: Response, user=Depends(current_user), db=
 
 
 @router.get('/me')
-def me(user=Depends(current_user)):
-    return identity(user)
+def me(user=Depends(current_user), db=Depends(session_dependency)):
+    result = identity(user)
+    linked = db.scalar(select(SupabaseIdentity).where(SupabaseIdentity.user_id == user.id))
+    if linked:
+        result['email'] = linked.email
+    return result

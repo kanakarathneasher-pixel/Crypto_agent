@@ -1,13 +1,13 @@
 import {ApiError, requestJson} from './api.ts';
 
-export type OrbitUser = {id:number; username:string; guest:boolean};
+export type OrbitUser = {id:number; username:string; guest:boolean; email?:string};
 type Progress = (message:string)=>void;
 type Request = typeof requestJson;
 const wait = (milliseconds:number)=>new Promise<void>(resolve=>setTimeout(resolve,milliseconds));
 
 /** Only readiness GETs are retried. Account creation and commands run once. */
 export async function connectWorkspace(progress:Progress = ()=>{}, request:Request = requestJson,
-                                       delay = wait):Promise<OrbitUser> {
+                                       delay = wait):Promise<OrbitUser|null> {
   for(let attempt=0; attempt<5; attempt++) {
     progress(attempt===0?'Connecting to your workspace…':'Waking your workspace. This can take about a minute…');
     try {
@@ -21,11 +21,17 @@ export async function connectWorkspace(progress:Progress = ()=>{}, request:Reque
     }
   }
   progress('Opening your account…');
-  return request('/auth/guest','POST');
+  try {
+    const user:OrbitUser=await request('/auth/me');
+    return user.guest?null:user;
+  } catch(error) {
+    if(error instanceof ApiError && error.status===401) return null;
+    throw error;
+  }
 }
 
 // Strict Mode mounts twice in development. Share startup until it completes.
-let pending:Promise<OrbitUser>|null=null;
+let pending:Promise<OrbitUser|null>|null=null;
 export function openWorkspace(progress:Progress) {
   if(!pending) pending=connectWorkspace(progress).finally(()=>{pending=null;});
   return pending;

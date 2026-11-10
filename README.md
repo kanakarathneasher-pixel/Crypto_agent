@@ -4,16 +4,16 @@ An integrated local Python/FastAPI + Next.js application for **XRP-USDC spot pap
 
 See [managed agent setup, model contract, dashboard APIs, recovery and tests](docs/managed-agent.md) for the new persistent execution service. Initialize it in the dashboard's **Managed spot agent** panel. The existing classifier remains observation-only; no model was retrained or automatically approved.
 
-The dashboard opens directly with an isolated guest paper workspace. No sign-in
-or registration is required. Guest access cannot enable live trading.
+Orbit opens with a minimal email/password sign-in and registration screen.
+Supabase Auth stores and verifies credentials; repeat logins return to the same
+personal paper workspace. An existing signed-in session opens the dashboard
+directly. Configure the project using the [Supabase Auth setup guide](docs/supabase-auth-setup.md).
 
 To test real account balances for your own Coinbase account, open **Account** in
 the dashboard and follow [the View-only account setup](docs/coinbase-account-setup.md).
 This owner-only connection keeps exchange holdings separate from simulated funds.
 
-The Account page also supports **Continue with Google** for sign-in or linking an
-existing Orbit account. Configure a Google Web client ID using the
-[Google sign-in setup guide](docs/google-signin-setup.md).
+The Account page shows the signed-in identity and a Sign out button.
 
 Hosting on Vercel requires a separately running Python backend and the frontend
 `BACKEND_URL` setting. Deploy only the self-contained [`frontend/`](frontend/README.md)
@@ -54,7 +54,7 @@ npm.cmd ci
 npm.cmd run dev
 ```
 
-Open **http://localhost:3000** for direct guest access, then initialize the Managed spot agent panel. API documentation: **http://127.0.0.1:8000/docs**. Keep the frontend URL on `localhost` to match `ALLOWED_ORIGIN`. Both backend and frontend must remain running. Starting only Next.js leaves `/api/*` requests unable to reach the backend on port 8000. The development server binds loopback; hosted/mobile-device access requires a deliberately configured network deployment.
+Open **http://localhost:3000** and sign in, then initialize the Managed spot agent panel. API documentation: **http://127.0.0.1:8000/docs**. Keep the frontend URL on `localhost` to match `ALLOWED_ORIGIN`. Both backend and frontend must remain running. Starting only Next.js leaves `/api/*` requests unable to reach the backend on port 8000. The development server binds loopback; hosted/mobile-device access requires a deliberately configured network deployment.
 
 For a production frontend build locally:
 
